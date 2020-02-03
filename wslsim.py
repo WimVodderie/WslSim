@@ -35,6 +35,9 @@ class Queue:
     def IsEmpty(self):
         return len(self._sheets) == 0
 
+    def Push(self,sheet):
+        self._sheets.append(sheet)
+
     def Pop(self):
         if self.IsEmpty():
             self._log.debug("blank sheet popped")
@@ -57,6 +60,11 @@ class Web:
         sheet._basePosition = position
         self._sheets.append(sheet)
 
+    def Dump(self):
+
+
+
+
     def Cleanup(self, position):
         """ Remove all sheets from the web that have passed the given position."""
 
@@ -75,6 +83,10 @@ class Engine:
         self._ejectLocation = 20
 
         self._position = 0
+
+    def QueueSheets(self,count,sheetType):
+        for i in range(count):
+            self._queue.Push(Sheet(sheetType))
 
     def GotoStandby(self):
         self._targetState = State.Standby
