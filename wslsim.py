@@ -1,7 +1,7 @@
 from enum import Enum
 import logging
 
-logging.basicConfig(level=logging.DEBUG, filename="wslsim.log", format="%(asctime)s:%(message)s")
+logging.basicConfig(level=logging.DEBUG, filename=f"{__file__}.log", format="%(asctime)s:%(message)s")
 
 
 class State(Enum):
@@ -11,9 +11,9 @@ class State(Enum):
 
 
 class SheetType(Enum):
-    Blank = 1
-    Job = 2
-    Test = 3
+    Blank = "-"
+    Job = "J"
+    Test = "T"
 
 
 class Sheet:
@@ -61,13 +61,14 @@ class Web:
         self._sheets.append(sheet)
 
     def Dump(self):
-
-
-
+        msg=""
+        for s in self._sheets:
+            msg+=s._type.value
+        print(msg)
 
     def Cleanup(self, position):
         """ Remove all sheets from the web that have passed the given position."""
-
+        pass
 
 
 class Engine:
@@ -84,6 +85,10 @@ class Engine:
 
         self._position = 0
 
+    def Dump(self):
+        print(f"State: Current {self._currentState} Target {self._targetState}")
+        self._web.Dump()
+
     def QueueSheets(self,count,sheetType):
         for i in range(count):
             self._queue.Push(Sheet(sheetType))
@@ -98,21 +103,21 @@ class Engine:
         self._targetState = State.Printing
 
     def RunStateMachine(self):
-        # UP - can always go to pausing
-        if self._targetState > State.Standby and self._currentState == State.Standby:
-            self._currentState = State.Pausing
+        # UP - can always go to Paused
+        if self._targetState.value > State.Standby.value and self._currentState.value == State.Standby.value:
+            self._currentState = State.Paused
 
         # UP - can go to printing when the queue is not empty
-        if self._targetState == State.Printing and self._currentState == State.Pausing:
+        if self._targetState.value == State.Printing.value and self._currentState.value == State.Paused.value:
             if self._queue.IsEmpty() == False:
                 self._currentState = State.Printing
 
         # DOWN - when engine is printing and target state drops we follow immediately
-        if self._currentState == State.Printing and self._targetState < State.Printing:
-            self._currentState = State.Pausing
+        if self._currentState.value == State.Printing.value and self._targetState.value < State.Printing.value:
+            self._currentState.value = State.Paused.value
 
-        if self._currentState == State.Pausing and self._targetState == State.Standby:
-            self._currentState = State.Standby
+        if self._currentState.value == State.Paused.value and self._targetState.value == State.Standby.value:
+            self._currentState.value = State.Standby.value
 
     def RunWeb(self):
         # when engine is in printing state we advance the web
@@ -121,6 +126,8 @@ class Engine:
 
             # transfer a sheet from the queue to the web
             self._web.Push(self._queue.Pop(), self._position)
+
+
 
     def RunEngine(self):
         self.RunStateMachine()
@@ -152,4 +159,16 @@ class UI:
 class BusinessLogic:
     def __init__(self):
         pass
+
+if __name__=="__main__":
+    engine = Engine()
+
+    engine.QueueSheets(5,SheetType.Test)
+    engine.QueueSheets(5,SheetType.Job)
+
+    engine.GotoPrinting()
+
+    for i in range(20):
+        engine.RunEngine()
+        engine.Dump()
 
