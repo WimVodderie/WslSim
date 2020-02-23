@@ -86,8 +86,11 @@ class Engine:
         self._playButton = Button()
         self._playButton.SetPressedCallback(self.OnPlayPressed)
         self._pauseButton = Button()
+        self._pauseButton.SetPressedCallback(self.OnPausePressed)
         self._stopButton = Button()
+        self._stopButton.SetPressedCallback(self.OnStopPressed)
         self._ejectButton = Button()
+        self._ejectButton.SetPressedCallback(self.OnEjectPressed)
 
         self._position = 0
 
@@ -96,6 +99,17 @@ class Engine:
         self.GotoPrinting()
         self.RunEngine()
 
+    def OnPausePressed(self):
+        self.GotoPaused()
+        self.RunEngine()
+
+    def OnStopPressed(self):
+        self.GotoStandby()
+        self.RunEngine()
+
+    def OnEjectPressed(self):
+        self.GotoStandby()
+        self.RunEngine()
 
     def Dump(self):
         print(f"State: Current {self._currentState} Target {self._targetState}")
@@ -126,10 +140,10 @@ class Engine:
 
         # DOWN - when engine is printing and target state drops we follow immediately
         if self._currentState.value == State.Printing.value and self._targetState.value < State.Printing.value:
-            self._currentState.value = State.Paused.value
+            self._currentState = State.Paused
 
         if self._currentState.value == State.Paused.value and self._targetState.value == State.Standby.value:
-            self._currentState.value = State.Standby.value
+            self._currentState = State.Standby
 
     def RunWeb(self):
         # when engine is in printing state we advance the web
@@ -145,19 +159,19 @@ class Engine:
             self._playButton.Enable()
             self._pauseButton.Enable()
             self._stopButton.Disable()
+            self._ejectButton.Disable()
 
         if self._targetState == State.Paused:
             self._playButton.Enable()
             self._pauseButton.Disable()
             self._stopButton.Enable()
+            self._ejectButton.Enable()
 
         if self._targetState == State.Printing:
             self._playButton.Disable()
             self._pauseButton.Enable()
             self._stopButton.Enable()
-
-
-
+            self._ejectButton.Disable()
 
 
     def RunEngine(self):
