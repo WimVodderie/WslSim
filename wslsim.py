@@ -83,7 +83,19 @@ class Engine:
         self._pauseLocation = 15
         self._ejectLocation = 20
 
+        self._playButton = Button()
+        self._playButton.SetPressedCallback(self.OnPlayPressed)
+        self._pauseButton = Button()
+        self._stopButton = Button()
+        self._ejectButton = Button()
+
         self._position = 0
+
+
+    def OnPlayPressed(self):
+        self.GotoPrinting()
+        self.RunEngine()
+
 
     def Dump(self):
         print(f"State: Current {self._currentState} Target {self._targetState}")
@@ -127,38 +139,62 @@ class Engine:
             # transfer a sheet from the queue to the web
             self._web.Push(self._queue.Pop(), self._position)
 
+    def UpdateButtons(self):
+
+        if self._targetState == State.Standby:
+            self._playButton.Enable()
+            self._pauseButton.Enable()
+            self._stopButton.Disable()
+
+        if self._targetState == State.Paused:
+            self._playButton.Enable()
+            self._pauseButton.Disable()
+            self._stopButton.Enable()
+
+        if self._targetState == State.Printing:
+            self._playButton.Disable()
+            self._pauseButton.Enable()
+            self._stopButton.Enable()
+
+
+
 
 
     def RunEngine(self):
         self.RunStateMachine()
         self.RunWeb()
-
+        self.UpdateButtons()
 
 class Button:
     def __init__(self):
-        pass
+        self._enabled=True
+        self._pressedCallback=None
+        self._enableCallback=None
+
+    def SetPressedCallback(self,callback):
+        self._pressedCallback=callback
+
+    def SetEnableCallback(self,callback):
+        self._enableCallback=callback
 
     def OnPressed(self):
-        pass
+        if self._pressedCallback!=None:
+            self._pressedCallback()
+
+    def IsEnabled(self):
+        return self._enabled
+
+    def _SetEnabled(self,enabled):
+        self._enabled=enabled
+        if self._enableCallback!=None:
+            self._enableCallback(self._enabled)
 
     def Enable(self):
-        pass
+        self._SetEnabled(True)
 
     def Disable(self):
-        pass
+        self._SetEnabled(False)
 
-
-class UI:
-    def __init__(self):
-        self._playButton = Button()
-        self._pauseButton = Button()
-        self._stopButton = Button()
-        self._ejectButton = Button()
-
-
-class BusinessLogic:
-    def __init__(self):
-        pass
 
 if __name__=="__main__":
     engine = Engine()
