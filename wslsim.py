@@ -4,12 +4,6 @@ import logging
 logging.basicConfig(level=logging.DEBUG, filename=f"{__file__}.log", format="%(asctime)s:%(message)s")
 
 
-class State(Enum):
-    Standby = 1
-    Paused = 2
-    Printing = 3
-
-
 class SheetType(Enum):
     Blank = "-"
     Job = "J"
@@ -71,11 +65,72 @@ class Web:
         pass
 
 
+class State(Enum):
+    Standby = 1
+    Paused = 2
+    Printing = 3
+
+
+class StateManager:
+    def __init__(self):
+        self._current = State.Standby
+        self._target = State.Standby
+        self._statesCallback = None
+        self._incrementLock = None
+        self._decrementLock = None
+
+    def Dump(self):
+        print(f"State: Current {self._current} Target {self._target}")
+        print(f"Increment: {self._incrementLock if self._incrementLock!=None else 'None'}")
+        print(f"Decrement: {self._decrementLock if self._decrementLock!=None else 'None'}")
+
+    def SetStatesCallback(self,callback):
+        self._statesCallback=callback
+
+    def SetTargetState(self,newTargetState):
+        if self._target!=newTargetState:
+            self._target=newTargetState
+            self.CallStatesCallback()
+
+    def CallStatesCallback(self):
+        if self._statesCallback!=None:
+            self._statesCallback(self._current,self._target)
+
+    def IncrementLock(self,incrementLockState):
+        self._incrementLock = incrementLockState
+
+    def DecrementLock(self,decrementLockState):
+        self._decrementLock=decrementLockState
+
+    def Run(self):
+        changed=False
+
+        # UP - from standby to paused
+        if self._target.value > State.Standby.value and self._current == State.Standby:
+            if self._incrementLock==None or self._incrementLock.value > State.Standby.value:
+                self._current = State.Paused
+                changed=True
+
+        # UP - from paused to printing
+        if self._target.value == State.Printing.value and self._current == State.Paused:
+            if self._incrementLock==None or self._incrementLock.value > State.Paused.value:
+                self._current = State.Printing
+                changed=True
+
+        # DOWN - when engine is printing and target state drops we follow immediately
+        if self._current.value == State.Printing.value and self._target.value < State.Printing.value:
+            self._current = State.Paused
+
+        if self._current.value == State.Paused.value and self._target.value == State.Standby.value:
+            self._current = State.Standby
+
+        if changed:
+            self.CallStatesCallback()
+
+
 class Engine:
     def __init__(self):
-        self._currentState = State.Standby
-        self._targetState = State.Standby
-
+        self._stateManager = StateManager()
         self._queue = Queue()
         self._web = Web()
 
@@ -96,58 +151,32 @@ class Engine:
 
 
     def OnPlayPressed(self):
-        self.GotoPrinting()
+        self._stateManager.SetTargetState(State.Printing)
         self.RunEngine()
 
     def OnPausePressed(self):
-        self.GotoPaused()
+        self._stateManager.SetTargetState(State.Paused)
         self.RunEngine()
 
     def OnStopPressed(self):
-        self.GotoStandby()
+        self._stateManager.SetTargetState(State.Standby)
         self.RunEngine()
 
     def OnEjectPressed(self):
-        self.GotoStandby()
+        self._stateManager.SetTargetState(State.Standby)
         self.RunEngine()
 
     def Dump(self):
-        print(f"State: Current {self._currentState} Target {self._targetState}")
+        self._stateManager.Dump()
         self._web.Dump()
 
     def QueueSheets(self,count,sheetType):
         for i in range(count):
             self._queue.Push(Sheet(sheetType))
 
-    def GotoStandby(self):
-        self._targetState = State.Standby
-
-    def GotoPaused(self):
-        self._targetState = State.Paused
-
-    def GotoPrinting(self):
-        self._targetState = State.Printing
-
-    def RunStateMachine(self):
-        # UP - can always go to Paused
-        if self._targetState.value > State.Standby.value and self._currentState.value == State.Standby.value:
-            self._currentState = State.Paused
-
-        # UP - can go to printing when the queue is not empty
-        if self._targetState.value == State.Printing.value and self._currentState.value == State.Paused.value:
-            if self._queue.IsEmpty() == False:
-                self._currentState = State.Printing
-
-        # DOWN - when engine is printing and target state drops we follow immediately
-        if self._currentState.value == State.Printing.value and self._targetState.value < State.Printing.value:
-            self._currentState = State.Paused
-
-        if self._currentState.value == State.Paused.value and self._targetState.value == State.Standby.value:
-            self._currentState = State.Standby
-
     def RunWeb(self):
         # when engine is in printing state we advance the web
-        if self._currentState == State.Printing:
+        if self._stateManager._current == State.Printing:
             self._position += 1
 
             # transfer a sheet from the queue to the web
@@ -155,19 +184,19 @@ class Engine:
 
     def UpdateButtons(self):
 
-        if self._targetState == State.Standby:
+        if self._stateManager._target == State.Standby:
             self._playButton.Enable()
             self._pauseButton.Enable()
             self._stopButton.Disable()
             self._ejectButton.Disable()
 
-        if self._targetState == State.Paused:
+        if self._stateManager._target == State.Paused:
             self._playButton.Enable()
             self._pauseButton.Disable()
             self._stopButton.Enable()
             self._ejectButton.Enable()
 
-        if self._targetState == State.Printing:
+        if self._stateManager._target == State.Printing:
             self._playButton.Disable()
             self._pauseButton.Enable()
             self._stopButton.Enable()
@@ -175,7 +204,14 @@ class Engine:
 
 
     def RunEngine(self):
-        self.RunStateMachine()
+
+        # when queue is empty the engine should not pass paused
+        if self._queue.IsEmpty():
+            self._stateManager.IncrementLock(State.Paused)
+        else:
+            self._stateManager.IncrementLock(None)
+
+        self._stateManager.Run()
         self.RunWeb()
         self.UpdateButtons()
 
@@ -216,7 +252,7 @@ if __name__=="__main__":
     engine.QueueSheets(5,SheetType.Test)
     engine.QueueSheets(5,SheetType.Job)
 
-    engine.GotoPrinting()
+    engine._stateManager.SetTargetState(State.Printing)
 
     for i in range(20):
         engine.RunEngine()

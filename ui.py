@@ -74,17 +74,6 @@ class MainWindow(wx.Frame):
     def OnExit(self,e):
         self.Close(True)  # Close the frame.
 
-    def OnOpen(self,e):
-        """ Open a file"""
-        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "*.*", wx.FD_OPEN)
-        if dlg.ShowModal() == wx.ID_OK:
-            self.filename = dlg.GetFilename()
-            self.dirname = dlg.GetDirectory()
-            f = open(os.path.join(self.dirname, self.filename), 'r')
-            self.control.SetValue(f.read())
-            f.close()
-        dlg.Destroy()
-
     def OnButtonPlay(self,e):
         self.control.AppendText("Play pressed\n")
         self._engine._playButton.OnPressed()
