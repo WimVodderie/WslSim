@@ -73,6 +73,7 @@ class State(Enum):
 
 class StateManager:
     def __init__(self):
+        self._log = logging.getLogger("StateManager")
         self._current = State.Standby
         self._target = State.Standby
         self._statesCallback = None
@@ -130,6 +131,7 @@ class StateManager:
 
 class Engine:
     def __init__(self):
+        self._log = logging.getLogger("Engine")
         self._stateManager = StateManager()
         self._queue = Queue()
         self._web = Web()
@@ -148,7 +150,6 @@ class Engine:
         self._ejectButton.SetPressedCallback(self.OnEjectPressed)
 
         self._position = 0
-
 
     def OnPlayPressed(self):
         self._stateManager.SetTargetState(State.Printing)
@@ -214,6 +215,7 @@ class Engine:
         self._stateManager.Run()
         self.RunWeb()
         self.UpdateButtons()
+
 
 class Button:
     def __init__(self):

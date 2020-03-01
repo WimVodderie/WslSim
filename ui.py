@@ -30,40 +30,53 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
         self.Bind(wx.EVT_MENU, self.OnAbout, menuAbout)
 
-        self.sizer2 = wx.BoxSizer(wx.HORIZONTAL)
+        # state
+        self.stateSizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.currentText = wx.StaticText(self,label="Current")
+        self.stateSizer.Add(self.currentText, 1, wx.EXPAND)
+        self.targetText = wx.StaticText(self,label="Target")
+        self.stateSizer.Add(self.targetText, 1, wx.EXPAND)
+        self._engine._stateManager.SetStatesCallback(self.OnStates)
 
         # buttons
+        self.buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
         playBmp = wx.Bitmap("res/play.jpg", wx.BITMAP_TYPE_ANY)
         self.playButton = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=playBmp, size=(playBmp.GetWidth()+10, playBmp.GetHeight()+10))
         self.playButton.Bind(wx.EVT_BUTTON,self.OnButtonPlay)
         self._engine._playButton.SetEnableCallback(self.OnButtonPlayEnabled)
-        self.sizer2.Add(self.playButton, 1, wx.EXPAND)
+        self.buttonSizer.Add(self.playButton, 1, wx.EXPAND)
         pauseBmp = wx.Bitmap("res/pause.jpg", wx.BITMAP_TYPE_ANY)
         self.pauseButton = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=pauseBmp, size=(pauseBmp.GetWidth()+10, pauseBmp.GetHeight()+10))
         self.pauseButton.Bind(wx.EVT_BUTTON,self.OnButtonPause)
         self._engine._pauseButton.SetEnableCallback(self.OnButtonPauseEnabled)
-        self.sizer2.Add(self.pauseButton, 1, wx.EXPAND)
+        self.buttonSizer.Add(self.pauseButton, 1, wx.EXPAND)
         stopBmp = wx.Bitmap("res/stop.jpg", wx.BITMAP_TYPE_ANY)
         self.stopButton = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=stopBmp, size=(stopBmp.GetWidth()+10, stopBmp.GetHeight()+10))
         self.stopButton.Bind(wx.EVT_BUTTON,self.OnButtonStop)
         self._engine._stopButton.SetEnableCallback(self.OnButtonStopEnabled)
-        self.sizer2.Add(self.stopButton, 1, wx.EXPAND)
+        self.buttonSizer.Add(self.stopButton, 1, wx.EXPAND)
         ejectBmp = wx.Bitmap("res/eject.jpg", wx.BITMAP_TYPE_ANY)
         self.ejectButton = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=ejectBmp, size=(ejectBmp.GetWidth()+10, ejectBmp.GetHeight()+10))
         self.ejectButton.Bind(wx.EVT_BUTTON,self.OnButtonEject)
         self._engine._ejectButton.SetEnableCallback(self.OnButtonEjectEnabled)
-        self.sizer2.Add(self.ejectButton, 1, wx.EXPAND)
+        self.buttonSizer.Add(self.ejectButton, 1, wx.EXPAND)
 
         # Use some sizers to see layout options
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.control, 1, wx.EXPAND)
-        self.sizer.Add(self.sizer2, 0, wx.EXPAND)
+        self.sizer.Add(self.stateSizer, 0 , wx.EXPAND)
+        self.sizer.Add(self.buttonSizer, 0, wx.EXPAND)
 
         #Layout sizers
         self.SetSizer(self.sizer)
         self.SetAutoLayout(1)
         self.sizer.Fit(self)
         self.Show()
+
+    def OnStates(self,currentState,targetState):
+        self.currentText.SetLabelText(f"{currentState}")
+        self.targetText.SetLabelText(f"{targetState}")
 
     def OnAbout(self,e):
         # Create a message dialog box
