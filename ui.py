@@ -32,14 +32,13 @@ class MainWindow(wx.Frame):
 
         # state
         self.stateSizer = wx.BoxSizer(wx.HORIZONTAL)
-
         self.currentText = wx.StaticText(self,label="Current")
         self.stateSizer.Add(self.currentText, 1, wx.EXPAND)
         self.targetText = wx.StaticText(self,label="Target")
         self.stateSizer.Add(self.targetText, 1, wx.EXPAND)
         self._engine._stateManager.SetStatesCallback(self.OnStates)
 
-        # buttons
+        # operator buttons
         self.buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
         playBmp = wx.Bitmap("res/play.jpg", wx.BITMAP_TYPE_ANY)
         self.playButton = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=playBmp, size=(playBmp.GetWidth()+10, playBmp.GetHeight()+10))
@@ -75,8 +74,8 @@ class MainWindow(wx.Frame):
         self.Show()
 
     def OnStates(self,currentState,targetState):
-        self.currentText.SetLabelText(f"{currentState}")
-        self.targetText.SetLabelText(f"{targetState}")
+        self.currentText.SetLabelText(f"Current: {currentState}")
+        self.targetText.SetLabelText(f"Target: {targetState}")
 
     def OnAbout(self,e):
         # Create a message dialog box
