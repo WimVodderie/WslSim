@@ -93,10 +93,12 @@ class MainWindow(wx.Frame):
         self.targetText.SetLabelText(f"Target: {targetState}")
 
     def OnQueueButton(self,e):
-        if self.isTestSheet.IsChecked:
+        if self.isTestSheet.IsChecked():
             self._engine.QueueSheets(1,wslsim.SheetType.Test)
+            self.control.AppendText("Test sheet queued\n")
         else:
             self._engine.QueueSheets(1,wslsim.SheetType.Job)
+            self.control.AppendText("Job sheet queued\n")
 
     def OnQueueSize(self,queueSize):
         self.queueSize.SetLabelText(f"#sheets: {queueSize}")
