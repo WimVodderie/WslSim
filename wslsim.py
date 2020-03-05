@@ -24,13 +24,19 @@ class Queue:
 
     def __init__(self):
         self._log = logging.getLogger("Queue")
+        self._queueCallback = None
         self._sheets = []
+
+    def SetQueueCallback(self,callback):
+        self._queueCallback=callback
 
     def IsEmpty(self):
         return len(self._sheets) == 0
 
     def Push(self,sheet):
         self._sheets.append(sheet)
+        if self._queueCallback!=None:
+            self._queueCallback(len(self._sheets))
 
     def Pop(self):
         if self.IsEmpty():
@@ -38,10 +44,14 @@ class Queue:
             return Sheet(SheetType.Blank)
         else:
             self._log.debug("non-blank sheet popped")
+            if self._queueCallback!=None:
+                self._queueCallback(len(self._sheets)-1)
             return self._sheets.pop(0)
 
     def Purge(self):
         self._sheets = []
+        if self._queueCallback!=None:
+            self._queueCallback(0)
 
 
 class Web:

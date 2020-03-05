@@ -10,9 +10,6 @@ class MainWindow(wx.Frame):
 
         self._engine = wslsim.Engine()
 
-
-        self.control = wx.TextCtrl(self, style=wx.TE_MULTILINE)
-
         # statusbar in the bottom of the window
         self.CreateStatusBar()
 
@@ -30,9 +27,26 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
         self.Bind(wx.EVT_MENU, self.OnAbout, menuAbout)
 
+        # queue
+        self.queueSizer = wx.BoxSizer(wx.VERTICAL)
+        self.queueSize = wx.StaticText(self,label="#sheets: 0")
+        self.queueSizer.Add(self.queueSize,1,wx.EXPAND)
+        self.isTestSheet = wx.CheckBox(self,label="Test sheet")
+        self.queueSizer.Add(self.isTestSheet,1,wx.EXPAND)
+        self.queueSheetButton = wx.Button(self,label="Queue")
+        self.queueSheetButton.Bind(wx.EVT_BUTTON,self.OnQueueButton)
+        self.queueSizer.Add(self.queueSheetButton,1,wx.EXPAND)
+        self._engine._queue.SetQueueCallback(self.OnQueueSize)
+
+        # text control
+        self.control = wx.TextCtrl(self, style=wx.TE_MULTILINE)
+
+        self.queueAndControlSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.queueAndControlSizer.Add(self.queueSizer,0)
+        self.queueAndControlSizer.Add(self.control,1,wx.EXPAND)
+
         # state
         self.stateSizer = wx.BoxSizer(wx.HORIZONTAL)
-
         self.currentText = wx.StaticText(self,label="Current")
         self.stateSizer.Add(self.currentText, 1, wx.EXPAND)
         self.targetText = wx.StaticText(self,label="Target")
@@ -64,9 +78,9 @@ class MainWindow(wx.Frame):
 
         # Use some sizers to see layout options
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.control, 1, wx.EXPAND)
+        self.sizer.Add(self.queueAndControlSizer, 1, wx.EXPAND)
         self.sizer.Add(self.stateSizer, 0 , wx.EXPAND)
-        self.sizer.Add(self.buttonSizer, 0, wx.EXPAND)
+        self.sizer.Add(self.buttonSizer, 0)
 
         #Layout sizers
         self.SetSizer(self.sizer)
@@ -77,6 +91,17 @@ class MainWindow(wx.Frame):
     def OnStates(self,currentState,targetState):
         self.currentText.SetLabelText(f"{currentState}")
         self.targetText.SetLabelText(f"{targetState}")
+
+    def OnQueueButton(self,e):
+        if self.isTestSheet.IsChecked:
+            self._engine.QueueSheets(1,wslsim.SheetType.Test)
+        else:
+            self._engine.QueueSheets(1,wslsim.SheetType.Job)
+
+    def OnQueueSize(self,queueSize):
+        self.queueSize.SetLabelText(f"#sheets: {queueSize}")
+
+
 
     def OnAbout(self,e):
         # Create a message dialog box
