@@ -53,7 +53,7 @@ class MainWindow(wx.Frame):
         self.stateSizer.Add(self.targetText, 1, wx.EXPAND)
         self._engine._stateManager.SetStatesCallback(self.OnStates)
 
-        # buttons
+        # operator buttons
         self.buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
         playBmp = wx.Bitmap("res/play.jpg", wx.BITMAP_TYPE_ANY)
         self.playButton = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=playBmp, size=(playBmp.GetWidth()+10, playBmp.GetHeight()+10))
@@ -89,8 +89,8 @@ class MainWindow(wx.Frame):
         self.Show()
 
     def OnStates(self,currentState,targetState):
-        self.currentText.SetLabelText(f"{currentState}")
-        self.targetText.SetLabelText(f"{targetState}")
+        self.currentText.SetLabelText(f"Current: {currentState}")
+        self.targetText.SetLabelText(f"Target: {targetState}")
 
     def OnQueueButton(self,e):
         if self.isTestSheet.IsChecked:
